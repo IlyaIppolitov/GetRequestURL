@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">GetRequestURL</string>
+    <string name="url_hint">Enter URL</string>
+    <string name="send_get_request">Send GET Request</string>
+    <string name="send_json_get_request">Send JSON GET Request</string>
+    <string name="InputName">Введите Имя</string>
+    <string name="getJSON">Получить JSON</string>
+    <string name="getAge">Получить возраст</string>
+</resources>
