@@ -13,13 +13,11 @@ import androidx.appcompat.app.AppCompatActivity;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.IOException;
-
-import okhttp3.Call;
-import okhttp3.Callback;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -28,6 +26,9 @@ public class MainActivity extends AppCompatActivity {
     private EditText editText;
     private Button btnJson;
     private Button btnAge;
+
+    private Retrofit retrofit;
+    private AgifyApi agifyApi;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,6 +39,13 @@ public class MainActivity extends AppCompatActivity {
         editText = findViewById(R.id.textName);
         btnJson = findViewById(R.id.buttonValidate);;
         btnAge = findViewById(R.id.buttonAge);
+
+        retrofit = new Retrofit.Builder()
+                .baseUrl("https://api.agify.io")
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+
+        agifyApi = retrofit.create(AgifyApi.class);
 
         btnJson.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -55,31 +63,30 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void checkName(String name) {
-        OkHttpClient client = new OkHttpClient();
-//        String apiKey = "35369c355357da9beb54790ca3344656";
-        String url ="https://api.agify.io?name=" + name;
-        Log.d("JSON", url);
-
-
-        Request request = new Request.Builder()
-                .url(url)
-                .build();
-
-        client.newCall(request).enqueue(new Callback() {
+        Call<AgeResponse> call = agifyApi.getAge(name);
+        call.enqueue(new Callback<AgeResponse>() {
             @Override
-            public void onFailure(@NonNull Call call, @NonNull IOException e) {
-                runOnUiThread(()->textView.setText(e.toString()));
+            public void onResponse(@NonNull Call<AgeResponse> call, @NonNull Response<AgeResponse> response) {
+                if (!response.isSuccessful()) {
+                    runOnUiThread(() -> textView.setText("Api request failed"));
+                    return;
+                }
+
+                AgeResponse ageResponse = response.body();
+                if (ageResponse != null) {
+                    String name = ageResponse.getName();
+                    int age = ageResponse.getAge();
+                    int count = ageResponse.getCount();
+                    String jsonData = "Name: " + name + ", Age: " + age + ", Count: " + count;
+                    Log.d("JSON", jsonData);
+                    runOnUiThread(() -> textView.setText(jsonData));
+                    runOnUiThread(() -> textViewAge.setText(String.valueOf(age)));
+                }
             }
 
             @Override
-            public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
-                if (!response.isSuccessful()){
-                    runOnUiThread(()->textView.setText("Api request failed"));
-                }else{
-                    String jsonData = response.body().string();
-                    Log.d("JSON", jsonData);
-                    runOnUiThread(()->textView.setText(jsonData));
-                }
+            public void onFailure(@NonNull Call<AgeResponse> call, @NonNull Throwable t) {
+                runOnUiThread(() -> textView.setText(t.toString()));
             }
         });
     }
